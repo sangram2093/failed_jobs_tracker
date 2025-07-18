@@ -1,15 +1,30 @@
 import requests
 
 SERVICENOW_API_URL = "https://<servicenow_instance>.service-now.com/api/now/table/incident"
-AUTH = ('username', 'password')  # Use secrets manager in prod
+AUTH = ('username', 'password')  # Replace with credentials or use a token
 
-def get_incident_by_order_id(order_id):
+PROXIES = {
+    "http": "http://<proxy_host>:<proxy_port>",
+    "https": "http://<proxy_host>:<proxy_port>"
+}
+
+def get_incident_by_job_and_order_id(job_name, order_id):
     try:
+        # Example: descriptionLIKE<job_name>^descriptionLIKE<order_id>
+        query = f"descriptionLIKE{job_name}^descriptionLIKE{order_id}"
+
         params = {
-            'sysparm_query': f'u_order_id={order_id}',
+            'sysparm_query': query,
             'sysparm_limit': 1
         }
-        response = requests.get(SERVICENOW_API_URL, auth=AUTH, params=params)
+
+        response = requests.get(
+            SERVICENOW_API_URL,
+            auth=AUTH,
+            params=params,
+            proxies=PROXIES,
+            verify=False   # Disable if required (but better to keep SSL verification enabled)
+        )
         response.raise_for_status()
 
         incidents = response.json().get('result', [])
