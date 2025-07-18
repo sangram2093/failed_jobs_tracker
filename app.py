@@ -15,21 +15,24 @@ def dashboard():
                 if "ENDED NOTOK" in line:
                     try:
                         date = line[0:4].strip()  # MMDD
-
-                        # Start parsing after fixed position (aligned after columns)
                         job_part = line[43:].strip()
 
-                        # Check if all required keywords exist
-                        if not all(x in job_part for x in ["JOB", "ORDERID", "RUNNO", "elapsed", "cpu"]):
-                            print(f"Skipping invalid line: {line}")
-                            continue
+                        # Extract job name before first '('
+                        job_name = job_part.split(' (ORDERID')[0].replace('JOB ', '').strip()
 
-                        job_name = job_part.split('JOB ')[1].split(' (ORDERID')[0].strip()
+                        # Extract OrderID
                         order_id = job_part.split('ORDERID ')[1].split(',')[0].strip()
+
+                        # Extract Run No
                         run_no = job_part.split('RUNNO ')[1].split(')')[0].strip()
+
+                        # Extract elapsed time
                         elapsed_time = job_part.split('elapsed ')[1].split(' Sec')[0].strip()
+
+                        # Extract CPU time
                         cpu_time = job_part.split('cpu ')[1].split(' Sec')[0].strip()
 
+                        # Fetch sysout & incident
                         error_line, sysout_file = fetch_and_store_sysout(job_name, order_id, run_no)
                         incident_no, incident_link = get_incident_by_order_id(order_id)
 
