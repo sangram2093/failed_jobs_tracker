@@ -12,30 +12,25 @@ def dashboard():
     try:
         with open(file_path, 'r') as file:
             for line in file:
-                date = line[0:4].strip()               # MMDD
-                job_part = line[43:].strip()           # From JOB ... till end
-
-                if "ENDED NOTOK" in job_part:
-                    # Extract details
+                if "ENDED NOTOK" in line:
                     try:
-                        # Extract job name between "JOB " and " (ORDERID"
-                        job_name = job_part.split('JOB ')[1].split(' (ORDERID')[0].strip()
+                        date = line[0:4].strip()  # MMDD
 
-                        # Extract OrderID and RunNo
+                        # Start parsing after fixed position (aligned after columns)
+                        job_part = line[43:].strip()
+
+                        # Check if all required keywords exist
+                        if not all(x in job_part for x in ["JOB", "ORDERID", "RUNNO", "elapsed", "cpu"]):
+                            print(f"Skipping invalid line: {line}")
+                            continue
+
+                        job_name = job_part.split('JOB ')[1].split(' (ORDERID')[0].strip()
                         order_id = job_part.split('ORDERID ')[1].split(',')[0].strip()
                         run_no = job_part.split('RUNNO ')[1].split(')')[0].strip()
+                        elapsed_time = job_part.split('elapsed ')[1].split(' Sec')[0].strip()
+                        cpu_time = job_part.split('cpu ')[1].split(' Sec')[0].strip()
 
-                        # Extract elapsed and cpu time
-                        elapsed_part = job_part.split('elapsed ')[1]
-                        elapsed_time = elapsed_part.split(' Sec')[0].strip()
-
-                        cpu_part = job_part.split('cpu ')[1]
-                        cpu_time = cpu_part.split(' Sec')[0].strip()
-
-                        # Fetch sysout log & error snippet
                         error_line, sysout_file = fetch_and_store_sysout(job_name, order_id, run_no)
-
-                        # Fetch Incident Details
                         incident_no, incident_link = get_incident_by_order_id(order_id)
 
                         failed_jobs.append({
@@ -53,7 +48,7 @@ def dashboard():
                         })
 
                     except Exception as e:
-                        print(f"Error parsing line: {line} - {e}")
+                        print(f"Error parsing line: {line.strip()} - {e}")
 
     except Exception as e:
         print(f"Error reading file: {e}")
