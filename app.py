@@ -1,40 +1,50 @@
 from flask import Flask, render_template, send_from_directory
 from utils.sysout_fetcher import fetch_and_store_sysout
-from utils.incident_fetcher import get_incident_by_order_id
+from utils.incident_fetcher import get_incident_by_job_and_order_id
 
 app = Flask(__name__)
+
+# Global cache for incident lookups
+incident_cache = {}
 
 @app.route("/")
 def dashboard():
     file_path = "/opt/CONTROL-M/ctm/job_status.log"
     failed_jobs = []
+    seen_jobs = set()  # To deduplicate based on (job_name, order_id)
 
     try:
         with open(file_path, 'r') as file:
             for line in file:
                 if "ENDED NOTOK" in line:
                     try:
-                        date = line[0:4].strip()  # MMDD
-                        job_part = line[43:].strip()
+                        date = line[0:4].strip()
+                        job_index = line.find('JOB ')
+                        if job_index == -1:
+                            continue
 
-                        # Extract job name before first '('
-                        job_name = job_part.split(' (ORDERID')[0].replace('JOB ', '').strip()
-
-                        # Extract OrderID
+                        job_part = line[job_index + 4:].strip()
+                        job_name = job_part.split(' (ORDERID')[0].strip()
                         order_id = job_part.split('ORDERID ')[1].split(',')[0].strip()
-
-                        # Extract Run No
                         run_no = job_part.split('RUNNO ')[1].split(')')[0].strip()
-
-                        # Extract elapsed time
                         elapsed_time = job_part.split('elapsed ')[1].split(' Sec')[0].strip()
-
-                        # Extract CPU time
                         cpu_time = job_part.split('cpu ')[1].split(' Sec')[0].strip()
 
-                        # Fetch sysout & incident
+                        # Deduplication check
+                        job_key = (job_name, order_id)
+                        if job_key in seen_jobs:
+                            continue
+                        seen_jobs.add(job_key)
+
+                        # Sysout fetch
                         error_line, sysout_file = fetch_and_store_sysout(job_name, order_id, run_no)
-                        incident_no, incident_link = get_incident_by_order_id(order_id)
+
+                        # Incident fetch with cache check
+                        if job_key in incident_cache:
+                            incident_no, incident_link = incident_cache[job_key]
+                        else:
+                            incident_no, incident_link = get_incident_by_job_and_order_id(job_name, order_id)
+                            incident_cache[job_key] = (incident_no, incident_link)
 
                         failed_jobs.append({
                             "time": date,
