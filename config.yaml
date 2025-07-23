@@ -1,16 +1,13 @@
 SERVICENOW:
-  url: "https://<servicenow_instance>.service-now.com/api/now/table/incident"
-  username: "your_user"
-  password: "your_pass"
+  url: "https://your_instance.service-now.com/api/now/table/incident"
+  username: "your_username"
+  password: "your_password"
   proxy:
-    http: "http://proxy_host:proxy_port"
-    https: "http://proxy_host:proxy_port"
+    http: "http://your.proxy.com:8080"
+    https: "http://your.proxy.com:8080"
 
 PATHS:
   daily_log_path: "/opt/CONTROL-M/ctm"
   sysout_source_dir: "/opt/CONTROL-M/ctm/sysout"
   sysout_archive_dir: "./static/logs"
   processed_data_dir: "./data"
-
-OTHER:
-  lookback_days: 30
