@@ -1,29 +1,31 @@
 import requests
 
-SERVICENOW_API_URL = "https://<servicenow_instance>.service-now.com/api/now/table/incident"
-AUTH = ('username', 'password')  # Replace with credentials or use a token
-
-PROXIES = {
-    "http": "http://<proxy_host>:<proxy_port>",
-    "https": "http://<proxy_host>:<proxy_port>"
-}
-
-def get_incident_by_job_and_order_id(job_name, order_id):
+def get_incident_by_job_and_order_id(job_name, order_id, config):
     try:
-        # Example: descriptionLIKE<job_name>^descriptionLIKE<order_id>
+        # Build query string for ServiceNow API
         query = f"descriptionLIKE{job_name}^descriptionLIKE{order_id}"
-
         params = {
             'sysparm_query': query,
             'sysparm_limit': 1
         }
 
+        servicenow_url = config["SERVICENOW"]["url"]
+        auth = (
+            config["SERVICENOW"]["username"],
+            config["SERVICENOW"]["password"]
+        )
+
+        proxies = {
+            "http": config["SERVICENOW"]["proxy"]["http"],
+            "https": config["SERVICENOW"]["proxy"]["https"]
+        }
+
         response = requests.get(
-            SERVICENOW_API_URL,
-            auth=AUTH,
+            servicenow_url,
+            auth=auth,
             params=params,
-            proxies=PROXIES,
-            verify=False   # Disable if required (but better to keep SSL verification enabled)
+            proxies=proxies,
+            verify=False  # You can make this configurable too
         )
         response.raise_for_status()
 
@@ -31,7 +33,11 @@ def get_incident_by_job_and_order_id(job_name, order_id):
         if incidents:
             incident_number = incidents[0].get('number')
             incident_sys_id = incidents[0].get('sys_id')
-            incident_link = f"https://<servicenow_instance>.service-now.com/nav_to.do?uri=incident.do?sys_id={incident_sys_id}"
+
+            # Build incident URL dynamically from base URL
+            base_url = servicenow_url.split("/api")[0]
+            incident_link = f"{base_url}/nav_to.do?uri=incident.do?sys_id={incident_sys_id}"
+
             return incident_number, incident_link
         else:
             return "No Incident Found", "#"
