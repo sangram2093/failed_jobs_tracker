@@ -6,97 +6,141 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { background-color: #f8f9fa; font-size: 0.9rem; }
-        h2 { color: #343a40; margin-bottom: 20px; }
-        .table thead th { background-color: #343a40; color: white; }
-        .table tbody tr:hover { background-color: #f1f1f1; }
-        .badge-danger { background-color: #dc3545; }
-        select { max-width: 200px; margin-bottom: 10px; }
-        .chart-container { max-width: 500px; margin-left: auto; margin-right: auto; }
+        body {
+            background-color: #f5f5f5;
+            font-size: 0.9rem;
+        }
+        h2 {
+            color: #343a40;
+            margin-bottom: 20px;
+        }
+        .table thead th {
+            background-color: #343a40;
+            color: white;
+            vertical-align: middle;
+        }
+        .table tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+        .badge-danger {
+            background-color: #dc3545;
+        }
+        .dashboard-section {
+            margin-top: 30px;
+        }
+        .form-select {
+            max-width: 200px;
+            margin-bottom: 20px;
+        }
+        canvas {
+            max-height: 300px;
+        }
     </style>
 </head>
 <body>
-<div class="container-fluid mt-4">
+<div class="container mt-4">
+
     <h2 class="text-center">Control-M Failed Jobs Dashboard</h2>
 
-    <div class="row mb-4">
-        <div class="col-md-3 offset-md-1">
+    <div class="row justify-content-between mb-4">
+        <div class="col-md-4">
             <form method="get" action="/">
-                <label for="dateSelect" class="form-label">Select Date:</label>
-                <select class="form-select" id="dateSelect" name="date" onchange="this.form.submit()">
+                <label for="date" class="form-label">Select Date:</label>
+                <select id="date" name="date" class="form-select" onchange="this.form.submit()">
                     {% for date in dates %}
-                        <option value="{{ date }}" {% if date == selected_date %}selected{% endif %}>{{ date }}</option>
+                        <option value="{{ date }}" {% if date == selected %}selected{% endif %}>{{ date }}</option>
                     {% endfor %}
                 </select>
             </form>
         </div>
-
-        <div class="col-md-6 chart-container">
-            <h5 class="text-center">Incidents Trend</h5>
-            <canvas id="trendChart"></canvas>
+        <div class="col-md-6">
+            <canvas id="incidentChart"></canvas>
         </div>
     </div>
 
-    {% if jobs %}
-    <div class="table-responsive">
-        <table class="table table-bordered table-hover text-center align-middle">
-            <thead>
-                <tr>
-                    <th>Date (MMDD)</th>
-                    <th>Job Name</th>
-                    <th>Order ID</th>
-                    <th>Run No</th>
-                    <th>Status</th>
-                    <th>Error Snippet</th>
-                    <th>Incident</th>
-                    <th>Log Download</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for job in jobs %}
-                <tr>
-                    <td>{{ job.time }}</td>
-                    <td>{{ job.tracker }}</td>
-                    <td>{{ job.OrderID }}</td>
-                    <td>{{ job.RunNo }}</td>
-                    <td><span class="badge bg-danger">{{ job.state }}</span></td>
-                    <td>{{ job.error_line }}</td>
-                    <td><a href="{{ job.incident_link }}" target="_blank">{{ job.incident_no }}</a></td>
-                    <td>
-                        {% if job.log_file %}
-                        <a href="/download/{{ job.log_date }}/{{ job.log_file }}">Download</a>
-                        {% else %}
-                        N/A
-                        {% endif %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="dashboard-section">
+        {% if jobs %}
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center align-middle">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Job Name</th>
+                        <th>Order ID</th>
+                        <th>Run No</th>
+                        <th>Status</th>
+                        <th>Elapsed Time</th>
+                        <th>CPU Time</th>
+                        <th>Error Snippet</th>
+                        <th>Incident</th>
+                        <th>Log Download</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for job in jobs %}
+                    <tr>
+                        <td>{{ job.time }}</td>
+                        <td>{{ job.tracker }}</td>
+                        <td>{{ job.OrderID }}</td>
+                        <td>{{ job.RunNo }}</td>
+                        <td><span class="badge bg-danger">{{ job.state }}</span></td>
+                        <td>{{ job["Elapsed Time"] }}</td>
+                        <td>{{ job["CPU Time"] }}</td>
+                        <td>{{ job.error_line }}</td>
+                        <td>
+                            <a href="{{ job.incident_link }}" target="_blank">{{ job.incident_no }}</a>
+                        </td>
+                        <td>
+                            {% if job.log_file %}
+                            <a href="/download/{{ selected }}/{{ job.log_file }}">Download</a>
+                            {% else %}
+                            N/A
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info text-center">No failed jobs found for the selected date.</div>
+        {% endif %}
     </div>
-    {% else %}
-    <div class="alert alert-info text-center">No failed jobs found.</div>
-    {% endif %}
 </div>
 
 <script>
-    const ctx = document.getElementById('trendChart').getContext('2d');
-    const trendChart = new Chart(ctx, {
-        type: 'bar',
+    const ctx = document.getElementById('incidentChart').getContext('2d');
+    const chart = new Chart(ctx, {
+        type: 'line',
         data: {
-            labels: {{ trend_labels | safe }},
+            labels: [{% for day in trend %}"{{ day.date }}"{% if not loop.last %}, {% endif %}{% endfor %}],
             datasets: [{
-                label: 'Failed Incidents Count',
-                data: {{ trend_counts | safe }},
-                backgroundColor: '#dc3545'
+                label: 'Incidents Trend',
+                data: [{% for day in trend %}{{ day.count }}{% if not loop.last %}, {% endif %}{% endfor %}],
+                borderColor: 'rgba(75, 192, 192, 1)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                fill: true,
+                tension: 0.3
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { display: false },
                 title: {
+                    display: true,
+                    text: 'Incidents Trend',
+                    font: {
+                        size: 18
+                    }
+                },
+                legend: {
                     display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    precision: 0
                 }
             }
         }
