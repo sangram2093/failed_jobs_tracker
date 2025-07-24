@@ -22,6 +22,9 @@ def dashboard():
     if os.path.exists(data_file):
         with open(data_file) as f:
             jobs = json.load(f)
+        # Add log_date to each job for download routing
+        for job in jobs:
+            job["log_date"] = selected_date
 
     # Prepare dropdown options based on available files
     available_dates = sorted([
@@ -47,9 +50,11 @@ def dashboard():
                            selected=selected_date,
                            trend=trend)
 
-@app.route("/download/<filename>")
-def download_file(filename):
-    return send_from_directory(config["PATHS"]["sysout_archive_dir"], filename, as_attachment=True)
+@app.route("/download/<log_date>/<filename>")
+def download_file(log_date, filename):
+    # Serve log file from the date-wise archive subfolder
+    date_folder = os.path.join(config["PATHS"]["sysout_archive_dir"], log_date)
+    return send_from_directory(date_folder, filename, as_attachment=True)
 
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=5000)
