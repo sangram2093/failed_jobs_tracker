@@ -38,11 +38,11 @@
     </style>
 </head>
 <body>
-<div class="container mt-4">
+<div class="container-fluid mt-4">
 
     <h2 class="text-center">Control-M Failed Jobs Dashboard</h2>
 
-    <div class="row justify-content-between mb-4">
+    <div class="row justify-content-between mb-4 px-4">
         <div class="col-md-4">
             <form method="get" action="/">
                 <label for="date" class="form-label">Select Date:</label>
@@ -58,10 +58,10 @@
         </div>
     </div>
 
-    <div class="dashboard-section">
+    <div class="dashboard-section px-4">
         {% if jobs %}
         <div class="table-responsive">
-            <table class="table table-bordered table-hover text-center align-middle">
+            <table class="table table-bordered table-hover text-center align-middle w-100">
                 <thead>
                     <tr>
                         <th>Date</th>
@@ -69,8 +69,6 @@
                         <th>Order ID</th>
                         <th>Run No</th>
                         <th>Status</th>
-                        <th>Elapsed Time</th>
-                        <th>CPU Time</th>
                         <th>Error Snippet</th>
                         <th>Incident</th>
                         <th>Log Download</th>
@@ -84,8 +82,6 @@
                         <td>{{ job.OrderID }}</td>
                         <td>{{ job.RunNo }}</td>
                         <td><span class="badge bg-danger">{{ job.state }}</span></td>
-                        <td>{{ job["Elapsed Time"] }}</td>
-                        <td>{{ job["CPU Time"] }}</td>
                         <td>{{ job.error_line }}</td>
                         <td>
                             <a href="{{ job.incident_link }}" target="_blank">{{ job.incident_no }}</a>
