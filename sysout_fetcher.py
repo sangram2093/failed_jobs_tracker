@@ -28,11 +28,24 @@ def fetch_and_store_sysout(tracker, order_id, run_no, source_dir, archive_dir):
         return f"Error reading sysout: {e}", None
 
 def extract_error_line(file_path):
+    """
+    Extracts a snippet of 10 lines before and after the first occurrence of an error keyword.
+    Searches for keywords like 'error', 'fail', 'failed', 'notok' in any casing.
+    """
+    error_keywords = ["error", "fail", "failed", "notok"]
     try:
-        with open(file_path, 'r') as file:
-            for line in file:
-                if "ERROR" in line or "FAIL" in line or "NOTOK" in line:
-                    return line.strip()
-        return "No error found in sysout"
+        with open(file_path, 'r', errors='ignore') as file:
+            lines = file.readlines()
+
+        for idx, line in enumerate(lines):
+            lower_line = line.lower()
+            if any(keyword in lower_line for keyword in error_keywords):
+                start_idx = max(0, idx - 10)
+                end_idx = min(len(lines), idx + 11)  # +11 to include current + 10 lines
+                error_snippet = lines[start_idx:end_idx]
+                return ''.join(error_snippet).strip()
+
+        return "No recognizable error found in sysout"
+
     except Exception as e:
         return f"Error reading log: {e}"
