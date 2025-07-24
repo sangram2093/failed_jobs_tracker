@@ -35,6 +35,13 @@
         canvas {
             max-height: 300px;
         }
+        .error-snippet {
+            max-height: 4.5em; /* Approx. 3 lines */
+            overflow-y: auto;
+            font-size: 0.85rem;
+            text-align: left;
+            white-space: pre-wrap;
+        }
     </style>
 </head>
 <body>
@@ -82,7 +89,7 @@
                         <td>{{ job.OrderID }}</td>
                         <td>{{ job.RunNo }}</td>
                         <td><span class="badge bg-danger">{{ job.state }}</span></td>
-                        <td>{{ job.error_line }}</td>
+                        <td><div class="error-snippet">{{ job.error_line }}</div></td>
                         <td>
                             <a href="{{ job.incident_link }}" target="_blank">{{ job.incident_no }}</a>
                         </td>
